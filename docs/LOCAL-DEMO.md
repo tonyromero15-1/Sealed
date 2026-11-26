@@ -1,38 +1,38 @@
 # SEALED: local demo transcript
 
 Produced by `scripts/demo-local.sh` on a local gnodev chain (Gno `v1.8.0`,
-the Onyx version). Six throwaway accounts: one seller and five bidders.
-Every step is a real signed transaction (`gnokey maketx call`). The pages
-below are the realm's `Render()` output, captured with
-`gnokey query vm/qrender` after each phase.
+the Onyx version), at the same package paths we deploy to Onyx. Six
+throwaway accounts: one seller and five bidders. Every step is a real signed
+transaction (`gnokey maketx call`). The pages below are the realm's
+`Render()` output, captured with `gnokey query vm/qrender` after each phase.
 
-Setup: 1,000 TAVERN for sale, reserve price 1 GNOT, commit window 45 s,
-reveal window 40 s.
+Setup, sized to fit the Onyx faucet (100 to 300 GNOT per request): 100
+TAVERN for sale, reserve price 0.05 GNOT, commit window 45 s, reveal window
+40 s.
 
 | Bidder | Sealed bid | Deposit | Reveals? |
 |---|---|---:|---|
-| alice | 3 GNOT × 300 | 1,000 GNOT (over-deposit hides her size) | yes |
-| bob | 2.5 GNOT × 250 | 625 GNOT | yes |
-| carol | 2 GNOT × 400 | 800 GNOT | yes |
-| dave | 2 GNOT × 200 | 400 GNOT | yes |
-| erin | 4 GNOT × 500 | 2,000 GNOT | **no** (sniper no-show) |
+| alice | 0.3 GNOT × 30 | 10 GNOT (over-deposit hides her size) | yes |
+| bob | 0.25 GNOT × 25 | 6.25 GNOT | yes |
+| carol | 0.2 GNOT × 40 | 8 GNOT | yes |
+| dave | 0.2 GNOT × 20 | 4 GNOT | yes |
+| erin | 0.4 GNOT × 50 | 20 GNOT | **no** (sniper no-show) |
 
 Accounts:
 
 ```
-sealed realm: gno.land/r/dev/sealed (g1jfk0kh44l5jsrr3d7ugfflxfnfxchnvq8qv0me)
-seller: g1cvqk8cnjm0vuzwdkfrp053v6kaaq7tv9he7eku
-alice: g1dd4gder40570lm6pzr3vg6xax4wqlp3782cduz
-bob: g1fgwks5n0vwqvxe9sgrp237t064nxme5ryhf9pa
-carol: g14nhazv3tjquy3fsc82f0ttdlsvxc42wawsgvw2
-dave: g18jnq9guqnc8xw0tcakrkvlxqp9gletlevkad6d
-erin: g1ltkryku5vv348mn8drv05uynf00ykud0xjm3lt
+sealed realm: gno.land/r/g15xk7p2u3q6epjq5kfyew2lku5epakfnat7fj40/sealed/v1 (g19ewgjgpz7duvzr7w9wk356yclhu40gs00wr6wl)
+seller: g18929gm67elrfd2kqg9m5lqn8s4ur6eg2yyygkq
+alice: g1pq57mdzlknct899zz0rncstuhjur909g7n0eur
+bob: g1utndt05ceugr5ss8wtfvrgz2n89sq8mswrgr46
+carol: g1zdvzgwkj2dd3m5l06yvz3wkejfyg6lr4mum9qq
+dave: g1xn0awj4vkt0w38uyu9fxyqnku4p7exwy8r6fu9
+erin: g1qett30vjk4wq22zzytzapahuujntdefwgdzha9
 ```
 
 > Note on "time left": gnodev page queries read the time of the last block
 > that included transactions, so the countdown only moves when a tx lands.
-> Deadlines are enforced with real block time: reveals before the commit end
-> and settles before the reveal end are rejected (see the tests).
+> Deadlines are enforced with real block time (see the tests).
 
 ## 1. Auction created (commit phase, no bids yet)
 
@@ -51,26 +51,26 @@ Bots win normal launches by buying first. Here, being first means nothing:
 
 | Auction | Token | Supply | Reserve | Phase | Time left | Sealed bids |
 |---|---|---:|---:|---|---|---:|
-| [#1](/r/dev/sealed:auction/1) | TAVERN | 1,000 | 1 GNOT | 🔒 Commit | 45s | 0 |
+| [#1](/r/g15xk7p2u3q6epjq5kfyew2lku5epakfnat7fj40/sealed/v1:auction/1) | TAVERN | 100 | 0.05 GNOT | 🔒 Commit | 45s | 0 |
 
 ---
 
-**Launch a token:** approve `g1jfk0kh44l5jsrr3d7ugfflxfnfxchnvq8qv0me` on your GRC20 for the sale supply, then call `CreateAuction`.
+**Launch a token:** approve `g19ewgjgpz7duvzr7w9wk356yclhu40gs00wr6wl` on your GRC20 for the sale supply, then call `CreateAuction`.
 ```
 
 ```markdown
-# Auction #1: 1,000 TAVERN
+# Auction #1: 100 TAVERN
 
-[← All auctions](/r/dev/sealed)
+[← All auctions](/r/g15xk7p2u3q6epjq5kfyew2lku5epakfnat7fj40/sealed/v1)
 
 **🔒 Commit** · 45s left
 
-- **Token:** `gno.land/r/dev/tavern.TAVERN`
-- **Seller:** `g1cvqk8c…7eku`
-- **Supply:** 1,000 TAVERN
-- **Reserve price:** 1 GNOT per TAVERN
-- **Commit ends:** 2026-11-25 18:08:42 UTC
-- **Reveal ends:** 2026-11-25 18:09:22 UTC
+- **Token:** `gno.land/r/g15xk7p2u3q6epjq5kfyew2lku5epakfnat7fj40/tavern/v1.TAVERN`
+- **Seller:** `g18929gm…ygkq`
+- **Supply:** 100 TAVERN
+- **Reserve price:** 0.05 GNOT per TAVERN
+- **Commit ends:** 2026-11-26 20:55:45 UTC
+- **Reveal ends:** 2026-11-26 20:56:25 UTC
 
 ## 🔒 0 sealed bids
 
@@ -81,7 +81,7 @@ Bid contents stay hidden. Only the count is public.
 
 ## 2. After 5 sealed commits
 
-Only the count is public. Prices, amounts and bidders' intentions stay hidden.
+Only the count is public.
 
 ```markdown
 # SEALED
@@ -98,26 +98,26 @@ Bots win normal launches by buying first. Here, being first means nothing:
 
 | Auction | Token | Supply | Reserve | Phase | Time left | Sealed bids |
 |---|---|---:|---:|---|---|---:|
-| [#1](/r/dev/sealed:auction/1) | TAVERN | 1,000 | 1 GNOT | 🔒 Commit | 45s | 5 |
+| [#1](/r/g15xk7p2u3q6epjq5kfyew2lku5epakfnat7fj40/sealed/v1:auction/1) | TAVERN | 100 | 0.05 GNOT | 🔒 Commit | 44s | 5 |
 
 ---
 
-**Launch a token:** approve `g1jfk0kh44l5jsrr3d7ugfflxfnfxchnvq8qv0me` on your GRC20 for the sale supply, then call `CreateAuction`.
+**Launch a token:** approve `g19ewgjgpz7duvzr7w9wk356yclhu40gs00wr6wl` on your GRC20 for the sale supply, then call `CreateAuction`.
 ```
 
 ```markdown
-# Auction #1: 1,000 TAVERN
+# Auction #1: 100 TAVERN
 
-[← All auctions](/r/dev/sealed)
+[← All auctions](/r/g15xk7p2u3q6epjq5kfyew2lku5epakfnat7fj40/sealed/v1)
 
-**🔒 Commit** · 45s left
+**🔒 Commit** · 44s left
 
-- **Token:** `gno.land/r/dev/tavern.TAVERN`
-- **Seller:** `g1cvqk8c…7eku`
-- **Supply:** 1,000 TAVERN
-- **Reserve price:** 1 GNOT per TAVERN
-- **Commit ends:** 2026-11-25 18:08:42 UTC
-- **Reveal ends:** 2026-11-25 18:09:22 UTC
+- **Token:** `gno.land/r/g15xk7p2u3q6epjq5kfyew2lku5epakfnat7fj40/tavern/v1.TAVERN`
+- **Seller:** `g18929gm…ygkq`
+- **Supply:** 100 TAVERN
+- **Reserve price:** 0.05 GNOT per TAVERN
+- **Commit ends:** 2026-11-26 20:55:45 UTC
+- **Reveal ends:** 2026-11-26 20:56:25 UTC
 
 ## 🔒 5 sealed bids
 
@@ -129,18 +129,18 @@ Bid contents stay hidden. Only the count is public.
 ## 3. Reveal phase (4 of 5 revealed, erin never shows)
 
 ```markdown
-# Auction #1: 1,000 TAVERN
+# Auction #1: 100 TAVERN
 
-[← All auctions](/r/dev/sealed)
+[← All auctions](/r/g15xk7p2u3q6epjq5kfyew2lku5epakfnat7fj40/sealed/v1)
 
 **🔓 Reveal** · 37s left
 
-- **Token:** `gno.land/r/dev/tavern.TAVERN`
-- **Seller:** `g1cvqk8c…7eku`
-- **Supply:** 1,000 TAVERN
-- **Reserve price:** 1 GNOT per TAVERN
-- **Commit ends:** 2026-11-25 18:08:42 UTC
-- **Reveal ends:** 2026-11-25 18:09:22 UTC
+- **Token:** `gno.land/r/g15xk7p2u3q6epjq5kfyew2lku5epakfnat7fj40/tavern/v1.TAVERN`
+- **Seller:** `g18929gm…ygkq`
+- **Supply:** 100 TAVERN
+- **Reserve price:** 0.05 GNOT per TAVERN
+- **Commit ends:** 2026-11-26 20:55:45 UTC
+- **Reveal ends:** 2026-11-26 20:56:25 UTC
 
 ## 🔓 Reveal phase
 
@@ -152,18 +152,18 @@ Call `Reveal(1, price, amount, salt)` before the window closes. A bid that is ne
 ## 4. Reveal window closed
 
 ```markdown
-# Auction #1: 1,000 TAVERN
+# Auction #1: 100 TAVERN
 
-[← All auctions](/r/dev/sealed)
+[← All auctions](/r/g15xk7p2u3q6epjq5kfyew2lku5epakfnat7fj40/sealed/v1)
 
 **⏳ Ready to settle**
 
-- **Token:** `gno.land/r/dev/tavern.TAVERN`
-- **Seller:** `g1cvqk8c…7eku`
-- **Supply:** 1,000 TAVERN
-- **Reserve price:** 1 GNOT per TAVERN
-- **Commit ends:** 2026-11-25 18:08:42 UTC
-- **Reveal ends:** 2026-11-25 18:09:22 UTC
+- **Token:** `gno.land/r/g15xk7p2u3q6epjq5kfyew2lku5epakfnat7fj40/tavern/v1.TAVERN`
+- **Seller:** `g18929gm…ygkq`
+- **Supply:** 100 TAVERN
+- **Reserve price:** 0.05 GNOT per TAVERN
+- **Commit ends:** 2026-11-26 20:55:45 UTC
+- **Reveal ends:** 2026-11-26 20:56:25 UTC
 
 ## ⏳ Reveal closed
 
@@ -173,88 +173,89 @@ Call `Reveal(1, price, amount, salt)` before the window closes. A bid that is ne
 ## 5. Settled (bob, a bidder, pressed Settle, but anyone can)
 
 ```markdown
-# Auction #1: 1,000 TAVERN
+# Auction #1: 100 TAVERN
 
-[← All auctions](/r/dev/sealed)
+[← All auctions](/r/g15xk7p2u3q6epjq5kfyew2lku5epakfnat7fj40/sealed/v1)
 
 **✅ Settled**
 
-- **Token:** `gno.land/r/dev/tavern.TAVERN`
-- **Seller:** `g1cvqk8c…7eku`
-- **Supply:** 1,000 TAVERN
-- **Reserve price:** 1 GNOT per TAVERN
-- **Commit ends:** 2026-11-25 18:08:42 UTC
-- **Reveal ends:** 2026-11-25 18:09:22 UTC
+- **Token:** `gno.land/r/g15xk7p2u3q6epjq5kfyew2lku5epakfnat7fj40/tavern/v1.TAVERN`
+- **Seller:** `g18929gm…ygkq`
+- **Supply:** 100 TAVERN
+- **Reserve price:** 0.05 GNOT per TAVERN
+- **Commit ends:** 2026-11-26 20:55:45 UTC
+- **Reveal ends:** 2026-11-26 20:56:25 UTC
 
 ## ✅ Results
 
 | Clearing price | Sold | Total raised |
 |---:|---:|---:|
-| **2 GNOT** | 1,000 / 1,000 TAVERN | 2,000 GNOT |
+| **0.2 GNOT** | 100 / 100 TAVERN | 20 GNOT |
 
-Every winner pays **2 GNOT per TAVERN**, the lowest accepted bid, however high they bid and whenever they committed.
+Every winner pays **0.2 GNOT per TAVERN**, the lowest accepted bid, however high they bid and whenever they committed.
 
-- **Seller proceeds:** 2,200 GNOT (unclaimed)
-- **Forfeits from no-shows:** 200 GNOT
+- **Seller proceeds:** 20 GNOT (unclaimed)
 - **Unsold, back to seller:** 0 TAVERN
+- **Forfeits from no-shows:** 2 GNOT, shared by the winners in proportion to tokens won (never the seller)
 
 ### Bids
 
-| Bidder | Bid price | Wanted | Won | Pays | Refund | Result | Claimed |
-|---|---:|---:|---:|---:|---:|---|:---:|
-| `g1dd4gde…cduz` | 3 GNOT | 300 | 300 | 600 GNOT | 400 GNOT | 🏆 Won | — |
-| `g1fgwks5…f9pa` | 2.5 GNOT | 250 | 250 | 500 GNOT | 125 GNOT | 🏆 Won | — |
-| `g14nhazv…gvw2` | 2 GNOT | 400 | 300 | 600 GNOT | 200 GNOT | 🌗 Partial fill | — |
-| `g18jnq9g…ad6d` | 2 GNOT | 200 | 150 | 300 GNOT | 100 GNOT | 🌗 Partial fill | — |
-| `g1ltkryk…m3lt` | sealed | — | 0 | 0 GNOT | 1,800 GNOT | ⚠️ No reveal (-10%) | — |
+| Bidder | Bid price | Wanted | Won | Pays | Refund | Forfeit share | Result | Claimed |
+|---|---:|---:|---:|---:|---:|---:|---|:---:|
+| `g1pq57md…0eur` | 0.3 GNOT | 30 | 30 | 6 GNOT | 4 GNOT | +0.6 GNOT | 🏆 Won | — |
+| `g1utndt0…gr46` | 0.25 GNOT | 25 | 25 | 5 GNOT | 1.25 GNOT | +0.5 GNOT | 🏆 Won | — |
+| `g1xn0awj…6fu9` | 0.2 GNOT | 20 | 15 | 3 GNOT | 1 GNOT | +0.3 GNOT | 🌗 Partial fill | — |
+| `g1zdvzgw…m9qq` | 0.2 GNOT | 40 | 30 | 6 GNOT | 2 GNOT | +0.6 GNOT | 🌗 Partial fill | — |
+| `g1qett30…zha9` | sealed | — | 0 | 0 GNOT | 18 GNOT | — | ⚠️ No reveal (-10%) | — |
 
 Winners and refunds: call `Claim(1)`.
 ```
 
-What happened: alice (3 GNOT) and bob (2.5 GNOT) fill completely, using 550
-of the 1,000. Carol and dave tie at 2 GNOT, wanting 600 for the 450 left, so
-they split pro-rata: carol 400×450/600 = 300 and dave 200×450/600 = 150.
-The clearing price is the lowest filled bid, **2 GNOT, and everyone pays
-it**: alice pays 600 GNOT, not 900. Erin's sealed 4 GNOT bid never counted.
-She gets 1,800 back and forfeits 200 GNOT (10%) to the seller.
+What happened: alice (0.3) and bob (0.25) fill completely, using 55 of the
+100. Carol and dave tie at 0.2 GNOT, wanting 60 for the 45 left, so they
+split pro-rata: carol 40×45/60 = 30 and dave 20×45/60 = 15. The clearing
+price is the lowest filled bid, **0.2 GNOT, and everyone pays it**: alice
+pays 6 GNOT, not 9. Erin's sealed 0.4 GNOT bid never counted. She gets 18
+GNOT back, and her 2 GNOT forfeit goes to the **winners by tokens won**
+(30/25/30/15 of 100). The seller gets only the 20 GNOT of sales.
 
 ## 6. After everyone claimed
 
 ```markdown
-# Auction #1: 1,000 TAVERN
+# Auction #1: 100 TAVERN
 
-[← All auctions](/r/dev/sealed)
+[← All auctions](/r/g15xk7p2u3q6epjq5kfyew2lku5epakfnat7fj40/sealed/v1)
 
 **✅ Settled**
 
-- **Token:** `gno.land/r/dev/tavern.TAVERN`
-- **Seller:** `g1cvqk8c…7eku`
-- **Supply:** 1,000 TAVERN
-- **Reserve price:** 1 GNOT per TAVERN
-- **Commit ends:** 2026-11-25 18:08:42 UTC
-- **Reveal ends:** 2026-11-25 18:09:22 UTC
+- **Token:** `gno.land/r/g15xk7p2u3q6epjq5kfyew2lku5epakfnat7fj40/tavern/v1.TAVERN`
+- **Seller:** `g18929gm…ygkq`
+- **Supply:** 100 TAVERN
+- **Reserve price:** 0.05 GNOT per TAVERN
+- **Commit ends:** 2026-11-26 20:55:45 UTC
+- **Reveal ends:** 2026-11-26 20:56:25 UTC
 
 ## ✅ Results
 
 | Clearing price | Sold | Total raised |
 |---:|---:|---:|
-| **2 GNOT** | 1,000 / 1,000 TAVERN | 2,000 GNOT |
+| **0.2 GNOT** | 100 / 100 TAVERN | 20 GNOT |
 
-Every winner pays **2 GNOT per TAVERN**, the lowest accepted bid, however high they bid and whenever they committed.
+Every winner pays **0.2 GNOT per TAVERN**, the lowest accepted bid, however high they bid and whenever they committed.
 
-- **Seller proceeds:** 2,200 GNOT (claimed ✓)
-- **Forfeits from no-shows:** 200 GNOT
+- **Seller proceeds:** 20 GNOT (claimed ✓)
 - **Unsold, back to seller:** 0 TAVERN
+- **Forfeits from no-shows:** 2 GNOT, shared by the winners in proportion to tokens won (never the seller)
 
 ### Bids
 
-| Bidder | Bid price | Wanted | Won | Pays | Refund | Result | Claimed |
-|---|---:|---:|---:|---:|---:|---|:---:|
-| `g1dd4gde…cduz` | 3 GNOT | 300 | 300 | 600 GNOT | 400 GNOT | 🏆 Won | ✓ |
-| `g1fgwks5…f9pa` | 2.5 GNOT | 250 | 250 | 500 GNOT | 125 GNOT | 🏆 Won | ✓ |
-| `g14nhazv…gvw2` | 2 GNOT | 400 | 300 | 600 GNOT | 200 GNOT | 🌗 Partial fill | ✓ |
-| `g18jnq9g…ad6d` | 2 GNOT | 200 | 150 | 300 GNOT | 100 GNOT | 🌗 Partial fill | ✓ |
-| `g1ltkryk…m3lt` | sealed | — | 0 | 0 GNOT | 1,800 GNOT | ⚠️ No reveal (-10%) | ✓ |
+| Bidder | Bid price | Wanted | Won | Pays | Refund | Forfeit share | Result | Claimed |
+|---|---:|---:|---:|---:|---:|---:|---|:---:|
+| `g1pq57md…0eur` | 0.3 GNOT | 30 | 30 | 6 GNOT | 4 GNOT | +0.6 GNOT | 🏆 Won | ✓ |
+| `g1utndt0…gr46` | 0.25 GNOT | 25 | 25 | 5 GNOT | 1.25 GNOT | +0.5 GNOT | 🏆 Won | ✓ |
+| `g1xn0awj…6fu9` | 0.2 GNOT | 20 | 15 | 3 GNOT | 1 GNOT | +0.3 GNOT | 🌗 Partial fill | ✓ |
+| `g1zdvzgw…m9qq` | 0.2 GNOT | 40 | 30 | 6 GNOT | 2 GNOT | +0.6 GNOT | 🌗 Partial fill | ✓ |
+| `g1qett30…zha9` | sealed | — | 0 | 0 GNOT | 18 GNOT | — | ⚠️ No reveal (-10%) | ✓ |
 
 Winners and refunds: call `Claim(1)`.
 ```
@@ -274,22 +275,22 @@ Bots win normal launches by buying first. Here, being first means nothing:
 
 | Auction | Token | Supply | Reserve | Phase | Time left | Sealed bids |
 |---|---|---:|---:|---|---|---:|
-| [#1](/r/dev/sealed:auction/1) | TAVERN | 1,000 | 1 GNOT | ✅ Settled | — | 5 |
+| [#1](/r/g15xk7p2u3q6epjq5kfyew2lku5epakfnat7fj40/sealed/v1:auction/1) | TAVERN | 100 | 0.05 GNOT | ✅ Settled | — | 5 |
 
 ---
 
-**Launch a token:** approve `g1jfk0kh44l5jsrr3d7ugfflxfnfxchnvq8qv0me` on your GRC20 for the sale supply, then call `CreateAuction`.
+**Launch a token:** approve `g19ewgjgpz7duvzr7w9wk356yclhu40gs00wr6wl` on your GRC20 for the sale supply, then call `CreateAuction`.
 ```
 
 TAVERN balances after claims (the seller started with 10,000 from the faucet
-and escrowed 1,000):
+and escrowed 100):
 
 ```
-seller: (9000 int64)
-alice: (300 int64)
-bob: (250 int64)
-carol: (300 int64)
-dave: (150 int64)
+seller: (9900 int64)
+alice: (30 int64)
+bob: (25 int64)
+carol: (30 int64)
+dave: (15 int64)
 erin: (0 int64)
 sealed escrow: (0 int64)
 ```
@@ -300,65 +301,65 @@ The SEALED escrow is back to 0: every token and every ugnot was paid out.
 
 ```
 == starting gnodev
-== seller: faucet + approve SEALED for 1,000 TAVERN
+== seller: faucet + approve SEALED for 100 TAVERN
 OK!
-GAS USED:   4869853
+GAS USED:   4879633
 OK!
-GAS USED:   5168671
-== seller: CreateAuction(1,000 TAVERN, reserve 1 GNOT)
+GAS USED:   5350490
+== seller: CreateAuction(100 TAVERN, reserve 0.05 GNOT)
 (1 uint64)
 OK!
-GAS USED:   10149646
-== alice: Commit(sealed hash 5a50e09d07d080e783ab04dc9a61b0f8a066a65048851b3b6632099d95d44668, deposit 1000 GNOT)
+GAS USED:   10272764
+== alice: Commit(sealed hash 1da7ca15947e311a99f0fbdebc4be2e91c6954dacf2beea01d9e36b00a208238, deposit 10000000ugnot)
 OK!
-GAS USED:   7350940
-== bob: Commit(sealed hash a8becc4f8e26eef33f37195143a0cedacdc56261ac2b358456c115b7252b8d17, deposit 625 GNOT)
+GAS USED:   7513703
+== bob: Commit(sealed hash 21e12b13531bd3ea0b9937cb2f86ada1dd652c414c2b9a7890649e0f4bee371c, deposit 6250000ugnot)
 OK!
-GAS USED:   7312005
-== carol: Commit(sealed hash c76a6a6a574fb7ac378d6ba8aebdd31ab19937a8e9e68ee447a11912171a05af, deposit 800 GNOT)
+GAS USED:   7445042
+== carol: Commit(sealed hash d08d14352da3a116a860891dc3e3fb98726a5216e0f42b38f7a246a4105b58c3, deposit 8000000ugnot)
 OK!
-GAS USED:   7851535
-== dave: Commit(sealed hash e7af6bfa615f9d5515ffea36f6bd133f31504b377ba4aa86df44ad1a79e1478d, deposit 400 GNOT)
+GAS USED:   7971092
+== dave: Commit(sealed hash 02bd6fde85cdca8b347efb5686c2b25ee31990560603fce2710002ec2aac96d2, deposit 4000000ugnot)
 OK!
-GAS USED:   8433652
-== erin: Commit(sealed hash 4766f9e0bc02c243976b5e94779af43c3d7080859940e740c7c5960bcd33f6b5, deposit 2000 GNOT)
+GAS USED:   8611502
+== erin: Commit(sealed hash e19c90c17367f7bea8ca7001592880860a24f3417ab79f8b7561ea404d855adb, deposit 20000000ugnot)
 OK!
-GAS USED:   8361135
+GAS USED:   8502495
 == waiting for the commit phase to end
-== alice: Reveal(3000000, 300, salt)
+== alice: Reveal(300000, 30, salt)
 OK!
-GAS USED:   6796896
-== bob: Reveal(2500000, 250, salt)
+GAS USED:   7036651
+== bob: Reveal(250000, 25, salt)
 OK!
-GAS USED:   6946338
-== carol: Reveal(2000000, 400, salt)
+GAS USED:   6891111
+== carol: Reveal(200000, 40, salt)
 OK!
-GAS USED:   6795045
-== dave: Reveal(2000000, 200, salt)
+GAS USED:   6893162
+== dave: Reveal(200000, 20, salt)
 OK!
-GAS USED:   6864080
+GAS USED:   6958388
 == waiting for the reveal window to close
 == bob (anyone): Settle
 OK!
-GAS USED:   8319096
+GAS USED:   8583801
 == alice: Claim
 OK!
-GAS USED:   10525037
+GAS USED:   10924599
 == bob: Claim
 OK!
-GAS USED:   11307859
+GAS USED:   11362060
 == carol: Claim
 OK!
-GAS USED:   11689359
+GAS USED:   11833056
 == dave: Claim
 OK!
-GAS USED:   12273213
+GAS USED:   12458059
 == erin: Claim
 OK!
-GAS USED:   7148505
+GAS USED:   7278326
 == seller: Claim
 OK!
-GAS USED:   5968369
+GAS USED:   6239624
 == TAVERN balances after claims
 == done: outputs in /home/user/Sealed/demo-out
 ```

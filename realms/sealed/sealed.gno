@@ -42,7 +42,9 @@ const (
 	Denom = "ugnot"
 
 	// ForfeitPercent of the deposit is kept from a bidder who commits but
-	// never reveals (anti-spam). It goes to the seller.
+	// never reveals (anti-spam). It is shared by the winners in proportion
+	// to tokens won, and burned if nobody won. It never goes to the seller,
+	// so a seller gains nothing from fake bids that never reveal.
 	ForfeitPercent = 10
 
 	// MinDeposit stops dust commitments from filling an auction's bid slots.
@@ -99,7 +101,7 @@ type Bid struct {
 type Auction struct {
 	ID           seqid.ID
 	Seller       address
-	Token        string // grc20reg key, e.g. "gno.land/r/dev/tavern.TAVERN"
+	Token        string // grc20reg key, e.g. "gno.land/r/g15xk7p2u3q6epjq5kfyew2lku5epakfnat7fj40/tavern/v1.TAVERN"
 	Supply       int64  // token units escrowed by the seller
 	ReservePrice int64  // ugnot per token unit; lower bids never fill
 	CommitEnd    int64  // unix seconds
@@ -117,6 +119,7 @@ type Auction struct {
 	sold          int64 // token units sold
 	raised        int64 // clearingPrice * sold
 	forfeits      int64 // ugnot kept from bids that were never revealed
+	burned        int64 // part of forfeits nobody can claim (no winners, or rounding)
 	hasFullFill   bool
 	fullFillMin   int64 // valid bids priced >= this fill completely
 	partialPrice  int64 // the price level that was split pro-rata
@@ -181,7 +184,7 @@ func CreateAuction(cur realm, token string, supply, reservePrice, commitEnd, rev
 
 	tok := grc20reg.Get(token)
 	if tok == nil {
-		panic("sealed: unknown token " + strconv.Quote(token) + " (use its grc20reg key, like gno.land/r/dev/tavern.TAVERN)")
+		panic("sealed: unknown token " + strconv.Quote(token) + " (use its grc20reg key, like gno.land/r/g15xk7p2u3q6epjq5kfyew2lku5epakfnat7fj40/tavern/v1.TAVERN)")
 	}
 	if supply <= 0 {
 		panic("sealed: supply must be positive")
@@ -337,8 +340,10 @@ func Settle(cur realm, auctionID uint64) {
 // Claim pays out whatever the caller is owed by a settled auction (it
 // settles first if needed):
 //   - a bidder gets their tokens won plus their GNOT refund
-//     (deposit - tokens*clearingPrice, or 90% of it if they never revealed);
-//   - the seller gets the proceeds, the forfeits, and the unsold tokens.
+//     (deposit - tokens*clearingPrice, or 90% of it if they never revealed),
+//     plus, for a winner, a share of the no-show forfeits;
+//   - the seller gets the proceeds (tokens sold x clearing price) and the
+//     unsold tokens. Never any forfeit.
 func Claim(cur realm, auctionID uint64) {
 	caller := cur.Previous().Address()
 	a := mustGetAuction(auctionID)
@@ -351,14 +356,14 @@ func Claim(cur realm, auctionID uint64) {
 	claimed := false
 	if caller == a.Seller && !a.sellerClaimed {
 		a.sellerClaimed = true
-		gnotOut += a.raised + a.forfeits
+		gnotOut += a.raised
 		tokensOut += a.Supply - a.sold
 		claimed = true
 	}
 	if b := a.getBid(caller); b != nil && !b.Claimed {
 		b.Claimed = true
 		o := a.outcomeOf(b)
-		gnotOut += o.Refund
+		gnotOut += o.Payout()
 		tokensOut += o.Filled
 		claimed = true
 	}
@@ -457,5 +462,6 @@ func emitSettled(a *Auction) {
 		"sold", strconv.FormatInt(a.sold, 10),
 		"raised", strconv.FormatInt(a.raised, 10),
 		"forfeits", strconv.FormatInt(a.forfeits, 10),
+		"burned", strconv.FormatInt(a.burned, 10),
 	)
 }

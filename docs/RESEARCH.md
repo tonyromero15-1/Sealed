@@ -1,10 +1,9 @@
 # SEALED: Day 1 research
 
 Researched on 2026-11-25 from the Gno source (the `v1.8.0-rc.1` tag Onyx runs,
-plus `chain/mainnet` and `master`), and two reference projects. All facts
-below were read from those sources. The Gno websites and the Onyx RPC were
-blocked by this environment's network policy, so nothing here was checked
-against the live chain yet (see "Blocked domains").
+plus `chain/mainnet` and `master`), and two reference projects. On 2026-11-26
+the Onyx RPC was opened and the key facts were checked live (marked
+**live**).
 
 ## 1. Tooling installed
 
@@ -33,8 +32,15 @@ not Onyx).
 - `dorahacks.io`
 
 Reachable: `github.com`, `api.github.com`, `proxy.golang.org`.
-Allow at least `rpc.onyx.testnets.gno.land` and `rpc.latest.testnets.gno.land`
-before Day 2. The others are nice to have.
+
+**Day 2 update:** the session now runs in a "Sealed" environment that allows
+`rpc.onyx.testnets.gno.land`, `rpc.latest.testnets.gno.land`,
+`onyx.testnets.gno.land`, `latest.testnets.gno.land`,
+`gpas.latest.testnets.gno.land` and `faucet.gno.land`. `curl` reaches them.
+`gnokey` does not: its RPC client dials TCP directly and ignores
+`HTTPS_PROXY`. `scripts/rpc-relay.py` bridges that gap locally
+(`gnokey … -remote http://127.0.0.1:26690`). On a normal machine use the
+https URL directly.
 
 ## 2. Onyx testnet
 
@@ -43,10 +49,12 @@ before Day 2. The others are nice to have.
 | Chain ID | `onyx-1` |
 | RPC | `https://rpc.onyx.testnets.gno.land:443` (alias: `https://rpc.latest.testnets.gno.land:443`) |
 | Web (gnoweb) | `https://onyx.testnets.gno.land` (alias `https://latest.testnets.gno.land`) |
-| Faucet | `https://faucet.gno.land`: pick the testnet, paste your `g1…` address. Rate-limited per address. FairDrop reports 50 GNOT per grant. |
+| Faucet | `https://faucet.gno.land`: pick "Onyx Faucet", paste your `g1…` address, solve the captcha. **live:** you pick **100, 200 or 300 GNOT** per request (backend `faucet.onyx.testnets.gno.land`). Rate-limited per address. |
 | Explorer | `https://gnoscan.io` (Onyx support not verified, blocked) |
 | Package approval status | `https://gpas.latest.testnets.gno.land` (look up your package path) |
-| Version | `v1.8.0-rc.1` since block 1,203,400 (2026-11-17). Runs mainnet's code. |
+| Version | `v1.8.0-rc.1` since block 1,203,400 (2026-11-17). Runs mainnet's code. **live:** height ~1,434,850 on 2026-11-26. |
+| Fees | **live:** gas price 1 ugnot per 1,000 gas (`auth/gasprice`). Storage 100 ugnot per byte (`vm:p:storage_price`). |
+| Code policy | **live:** `vm:p:code_submission_policy = "inert"`, 7 addresses in `vm:p:pkg_approvers` (the gpao bot `g1yaee4f…` plus 6 people). FairDrop's realm renders now, so it was approved. |
 | Launched | 2026-09-28. State persists across upgrades. |
 
 ### Three Onyx rules that change our plan
@@ -72,16 +80,34 @@ before Day 2. The others are nice to have.
 
 ```sh
 scripts/set-namespace.sh g1YOURADDRESS
-gnokey maketx addpkg -pkgpath gno.land/r/g1YOURADDRESS/tavern -pkgdir realms/tavern \
+gnokey maketx addpkg -pkgpath gno.land/r/g1YOURADDRESS/tavern/v1 -pkgdir realms/tavern \
   -gas-fee 10000000ugnot -gas-wanted 50000000 -broadcast \
   -chainid onyx-1 -remote https://rpc.onyx.testnets.gno.land:443 YOURKEY
-# then the same for realms/sealed (tavern first: it's the demo token)
+# then the same for sealed/v1 (tavern first: it is the demo token). scripts/deploy-onyx.sh does both.
 ```
 
-Each byte stored locks a 100 ugnot storage deposit, so a deploy costs a few
-GNOT. Check that the package went live with
-`gnokey query vm/qrender --data "gno.land/r/g1YOURADDRESS/sealed:" -remote …`.
+`scripts/deploy-onyx.sh <key>` does both deploys. It uploads **source files
+only**, not `_test.gno`. Measured on a local chain at the same paths:
+
+| Package | Gas | Storage | Total cost |
+|---|---:|---:|---:|
+| `tavern/v1` | 19.2M | 15,419 bytes | 1.64 GNOT |
+| `sealed/v1` with tests | 87.0M | 41,622 bytes | 4.26 GNOT |
+| `sealed/v1` source only | 53.2M | 42,264 bytes | 4.33 GNOT |
+
+The test file nearly doubles the gas. On Onyx the approver pays that gas
+when enabling, and gpao's default budget is 100M per approval, so we ship
+source only. Budget about 6 GNOT for both deploys, plus about 50 GNOT for
+an on-chain demo.
+
+Check that the package went live with
+`gnokey query vm/qrender --data "gno.land/r/g1YOURADDRESS/sealed/v1:" -remote …`.
 A parked package answers `package_parked`.
+
+**Path rule (found the hard way):** the last path element before the version
+must equal the package name. `…/sealed/v1` with `package sealed` is fine.
+`…/sealedprobe/v1` with `package sealed` is refused as an invalid package
+path.
 
 ### Packages available on Onyx
 
@@ -209,8 +235,10 @@ A commit-reveal raffle board.
   Bidders can over-deposit to hide their real size. The extra is refunded.
 - **Pro-rata rounding dust** (under 1 unit per tied bidder) is not handed
   out by any order. It goes back to the seller as unsold.
-- **Forfeits go to the seller.** No-shows can't be caused by the seller, so
-  this doesn't create a bad incentive.
+- **Forfeits never go to the seller** (Day 2 fix). As first built, a seller
+  could spray fake bids from other addresses, never reveal, and get the 10%
+  back, faking demand for free. Now forfeits go to the winners by tokens won,
+  and are burned when nobody wins.
 - **The token's own realm controls its ledger.** A malicious token could burn
   escrowed tokens. SEALED is only as trustworthy as the token being sold.
 - **gnodev countdowns can look frozen.** Page queries read the time of the

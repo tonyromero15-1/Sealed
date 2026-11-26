@@ -10,7 +10,7 @@ set -euo pipefail
 
 NS="${1:?usage: $0 <namespace, e.g. your g1 address>}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-CUR=$(sed -n 's|^module = "gno.land/r/\([^/]*\)/sealed"|\1|p' "$ROOT/realms/sealed/gnomod.toml")
+CUR=$(sed -n 's|^module = "gno.land/r/\([^/]*\)/sealed/.*"|\1|p' "$ROOT/realms/sealed/gnomod.toml")
 
 if [ "$CUR" = "$NS" ]; then
   echo "already on namespace $NS"

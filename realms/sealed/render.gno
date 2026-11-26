@@ -131,9 +131,17 @@ func renderResults(sb *strings.Builder, a *Auction, sym string) {
 	if a.sellerClaimed {
 		sellerState = "claimed ✓"
 	}
-	sb.WriteString("- **Seller proceeds:** " + formatGNOT(a.raised+a.forfeits) + " (" + sellerState + ")\n")
-	sb.WriteString("- **Forfeits from no-shows:** " + formatGNOT(a.forfeits) + "\n")
-	sb.WriteString("- **Unsold, back to seller:** " + formatInt(a.Supply-a.sold) + " " + sym + "\n\n")
+	sb.WriteString("- **Seller proceeds:** " + formatGNOT(a.raised) + " (" + sellerState + ")\n")
+	sb.WriteString("- **Unsold, back to seller:** " + formatInt(a.Supply-a.sold) + " " + sym + "\n")
+	if a.forfeits > 0 {
+		sb.WriteString("- **Forfeits from no-shows:** " + formatGNOT(a.forfeits) +
+			", shared by the winners in proportion to tokens won (never the seller)\n")
+	}
+	if a.burned > 0 {
+		sb.WriteString("- **Burned:** " + formatGNOT(a.burned) +
+			" (forfeits with no winner to receive them, or rounding), locked in the realm for good\n")
+	}
+	sb.WriteString("\n")
 
 	// Revealed bids by price (highest first), then the no-shows.
 	var revealed bidsByPrice
@@ -150,21 +158,22 @@ func renderResults(sb *strings.Builder, a *Auction, sym string) {
 	sort.Sort(revealed)
 
 	sb.WriteString("### Bids\n\n")
-	sb.WriteString("| Bidder | Bid price | Wanted | Won | Pays | Refund | Result | Claimed |\n")
-	sb.WriteString("|---|---:|---:|---:|---:|---:|---|:---:|\n")
+	sb.WriteString("| Bidder | Bid price | Wanted | Won | Pays | Refund | Forfeit share | Result | Claimed |\n")
+	sb.WriteString("|---|---:|---:|---:|---:|---:|---:|---|:---:|\n")
 	for _, b := range revealed {
 		o := a.outcomeOf(b)
 		sb.WriteString("| `" + shortAddr(b.Bidder) + "` | " + formatGNOT(b.Price) + " | " +
 			formatInt(b.Amount) + " | " + formatInt(o.Filled) + " | " + formatGNOT(o.Cost) + " | " +
-			formatGNOT(o.Refund) + " | " + statusIcon(o.Status) + o.Status + " | " + check(b.Claimed) + " |\n")
+			formatGNOT(o.Refund) + " | " + bonus(o.ForfeitShare) + " | " +
+			statusIcon(o.Status) + o.Status + " | " + check(b.Claimed) + " |\n")
 	}
 	for _, b := range hidden {
 		o := a.outcomeOf(b)
 		sb.WriteString("| `" + shortAddr(b.Bidder) + "` | sealed | — | 0 | " + formatGNOT(0) + " | " +
-			formatGNOT(o.Refund) + " | " + statusIcon(o.Status) + o.Status + " | " + check(b.Claimed) + " |\n")
+			formatGNOT(o.Refund) + " | — | " + statusIcon(o.Status) + o.Status + " | " + check(b.Claimed) + " |\n")
 	}
 	if len(revealed)+len(hidden) == 0 {
-		sb.WriteString("| — | — | — | — | — | — | No bids | — |\n")
+		sb.WriteString("| — | — | — | — | — | — | — | No bids | — |\n")
 	}
 	sb.WriteString("\nWinners and refunds: call `Claim(" + idStr(a) + ")`.\n")
 }
@@ -211,6 +220,13 @@ func statusIcon(status string) string {
 		return "⚠️ "
 	}
 	return "✖️ "
+}
+
+func bonus(ugnot int64) string {
+	if ugnot == 0 {
+		return "—"
+	}
+	return "+" + formatGNOT(ugnot)
 }
 
 func check(b bool) string {

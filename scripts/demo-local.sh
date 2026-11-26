@@ -1,10 +1,13 @@
 #!/usr/bin/env bash
 # Full SEALED lifecycle on a throwaway local chain (gnodev):
 #   seller gets TAVERN from the faucet and approves SEALED,
-#   creates an auction (1,000 TAVERN, reserve 1 GNOT),
+#   creates an auction (100 TAVERN, reserve 0.05 GNOT),
 #   5 bidders commit sealed bids, 4 reveal (1 no-show),
 #   a passer-by settles, everyone claims.
 # The Render page is captured after each phase into $OUT/*.md.
+#
+# Numbers are sized for the Onyx faucet (100-300 GNOT per request): all five
+# deposits together are about 48 GNOT.
 #
 # Usage: scripts/demo-local.sh            (needs gno, gnokey, gnodev on PATH)
 # Env:   COMMIT_SECS / REVEAL_SECS        phase lengths (default 45 / 40)
@@ -18,8 +21,10 @@ COMMIT_SECS="${COMMIT_SECS:-45}"
 REVEAL_SECS="${REVEAL_SECS:-40}"
 RPC="127.0.0.1:26657"
 CHAIN="dev"
-SEALED="gno.land/r/dev/sealed"
-TAVERN="gno.land/r/dev/tavern"
+# Package paths come from gnomod.toml, so the demo follows set-namespace.sh.
+modpath() { sed -n 's|^module = "\(.*\)"|\1|p' "$ROOT/realms/$1/gnomod.toml"; }
+SEALED="$(modpath sealed)"
+TAVERN="$(modpath tavern)"
 TOKEN_KEY="$TAVERN.TAVERN"
 GNOT=1000000
 
@@ -74,16 +79,16 @@ SEALED_ADDR=$(qeval "$SEALED.Address()" | sed -E 's/.*"(g1[0-9a-z]+)".*/\1/')
 } | tee "$OUT/accounts.txt"
 
 # --- 0. seller prepares the sale tokens ---------------------------------
-log "seller: faucet + approve SEALED for 1,000 TAVERN"
+log "seller: faucet + approve SEALED for 100 TAVERN"
 call seller tavern.Faucet "" --
-call seller tavern.Approve "" -- "$SEALED_ADDR" 1000
+call seller tavern.Approve "" -- "$SEALED_ADDR" 100
 
 # --- 1. create ------------------------------------------------------------
 NOW=$(date +%s)
 COMMIT_END=$((NOW + COMMIT_SECS))
 REVEAL_END=$((COMMIT_END + REVEAL_SECS))
-log "seller: CreateAuction(1,000 TAVERN, reserve 1 GNOT)"
-call seller CreateAuction "" -- "$TOKEN_KEY" 1000 $((1 * GNOT)) "$COMMIT_END" "$REVEAL_END"
+log "seller: CreateAuction(100 TAVERN, reserve 0.05 GNOT)"
+call seller CreateAuction "" -- "$TOKEN_KEY" 100 50000 "$COMMIT_END" "$REVEAL_END"
 ID=1
 render "" 01-home-created.md
 render "auction/$ID" 02-auction-created.md
@@ -91,18 +96,18 @@ render "auction/$ID" 02-auction-created.md
 # --- 2. commit ------------------------------------------------------------
 # name price(ugnot) amount deposit(ugnot)
 BIDS=(
-  "alice 3000000 300 1000000000"   # 3 GNOT x 300, over-deposits 1,000 GNOT to hide her size
-  "bob   2500000 250 625000000"    # 2.5 GNOT x 250
-  "carol 2000000 400 800000000"    # 2 GNOT x 400
-  "dave  2000000 200 400000000"    # 2 GNOT x 200 (ties with carol)
-  "erin  4000000 500 2000000000"   # 4 GNOT x 500, a sniper who never reveals
+  "alice 300000 30 10000000"   # 0.3 GNOT x 30 = 9 GNOT; over-deposits 10 GNOT to hide her size
+  "bob   250000 25 6250000"    # 0.25 GNOT x 25
+  "carol 200000 40 8000000"    # 0.2 GNOT x 40
+  "dave  200000 20 4000000"    # 0.2 GNOT x 20 (ties with carol)
+  "erin  400000 50 20000000"   # 0.4 GNOT x 50, a sniper who never reveals
 )
 declare -A SALT
 for b in "${BIDS[@]}"; do
   read -r n price amount deposit <<<"$b"
   SALT[$n]=$(head -c 16 /dev/urandom | od -An -tx1 | tr -d ' \n')
   h=$(commitment "${ADDR[$n]}" "$price" "$amount" "${SALT[$n]}")
-  log "$n: Commit(sealed hash $h, deposit $((deposit / GNOT)) GNOT)"
+  log "$n: Commit(sealed hash $h, deposit ${deposit}ugnot)"
   call "$n" Commit "${deposit}ugnot" -- "$ID" "$h"
 done
 render "" 03-home-commit.md

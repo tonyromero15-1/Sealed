@@ -17,52 +17,81 @@ SEALED runs a token launch as a **sealed-bid, uniform-price auction** on
    nothing.
 
 Then everyone pulls their own funds with `Claim`: winners get tokens plus
-their change, losers get a refund, and the seller gets proceeds plus unsold
-tokens. Unrevealed bids lose 10% of their deposit (anti-spam).
+their change, losers get a refund, and the seller gets the sale proceeds plus
+unsold tokens.
+
+**No-shows:** a bid that is committed but never revealed loses 10% of its
+deposit. That forfeit goes to the **winners, in proportion to tokens won**,
+never to the seller. So a seller who fakes demand with bids that never reveal
+only pays the real buyers. If nobody wins, the forfeit is **burned**: it stays
+locked in the realm, and no one can withdraw it.
 
 Built for the Gnome Tavern hackathon (Gno.land × DoraHacks). Written in Gno
 for the Onyx testnet.
 
 ## Example (from the local demo)
 
-1,000 TAVERN for sale, reserve 1 GNOT. Five sealed bids, one never revealed:
+100 TAVERN for sale, reserve 0.05 GNOT. Five sealed bids, one never revealed:
 
-| Bidder | Bid | Wanted | Won | Pays (at 2 GNOT) | Result |
-|---|---:|---:|---:|---:|---|
-| alice | 3 GNOT | 300 | 300 | 600 GNOT | Won |
-| bob | 2.5 GNOT | 250 | 250 | 500 GNOT | Won |
-| carol | 2 GNOT | 400 | 300 | 600 GNOT | Partial (pro-rata tie) |
-| dave | 2 GNOT | 200 | 150 | 300 GNOT | Partial (pro-rata tie) |
-| erin | sealed | — | 0 | 0 | No reveal: loses 200 of 2,000 GNOT |
+| Bidder | Bid | Wanted | Won | Pays (at 0.2 GNOT) | Forfeit share | Result |
+|---|---:|---:|---:|---:|---:|---|
+| alice | 0.3 GNOT | 30 | 30 | 6 GNOT | +0.6 GNOT | Won |
+| bob | 0.25 GNOT | 25 | 25 | 5 GNOT | +0.5 GNOT | Won |
+| carol | 0.2 GNOT | 40 | 30 | 6 GNOT | +0.6 GNOT | Partial (pro-rata tie) |
+| dave | 0.2 GNOT | 20 | 15 | 3 GNOT | +0.3 GNOT | Partial (pro-rata tie) |
+| erin | sealed | — | 0 | 0 | — | No reveal: loses 2 of 20 GNOT |
 
-Clearing price is **2 GNOT** for everyone. Alice bid 3 but pays 2, so there's
-no reason to race or overpay. The full page output for every phase is in
-[`docs/LOCAL-DEMO.md`](docs/LOCAL-DEMO.md).
+Clearing price is **0.2 GNOT** for everyone. Alice bid 0.3 but pays 0.2, so
+there's no reason to race or overpay. The seller receives exactly the 20 GNOT
+of sales. Every phase's page output is in [`docs/LOCAL-DEMO.md`](docs/LOCAL-DEMO.md).
+
+## Known limitations
+
+- **Reveals are public as they happen.** During the reveal window, later
+  revealers can see earlier bids before deciding to reveal. Not revealing
+  costs 10%, which limits this, but it is still information.
+- **Deposits show maximum size.** A deposit is visible during the commit
+  phase and caps `price × amount`. Bidders can over-deposit to hide their
+  real bid. The extra is refunded.
+- **Future work: encrypted bids.** For example, threshold or timelock
+  encryption, so nothing about any bid leaks until settlement and no
+  separate reveal step is needed.
+- **The token's own realm controls its ledger.** A malicious token could
+  burn escrowed tokens. SEALED is only as trustworthy as the token being sold.
+- **Pro-rata rounding dust** (under 1 token per tied bidder) returns to the
+  seller as unsold. Forfeit rounding dust is burned.
+- **Up to 200 bids per auction**, so `Settle` always fits in a block.
 
 ## Layout
 
 ```
-realms/sealed/    gno.land/r/dev/sealed: the auction realm
+realms/sealed/    gno.land/r/<ns>/sealed/v1: the auction realm
   sealed.gno        types, CreateAuction / Commit / Reveal / Settle / Claim
-  settle.gno        clearing price, pro-rata split, outcomes
+  settle.gno        clearing price, pro-rata split, forfeit shares
   render.gno        gnoweb pages (home + auction page)
-  sealed_test.gno   17 tests
-realms/tavern/    gno.land/r/dev/tavern: demo GRC20 (TAVERN) with a faucet
+  sealed_test.gno   20 tests
+realms/tavern/    gno.land/r/<ns>/tavern/v1: demo GRC20 (TAVERN) with a faucet
 scripts/
   setup-gno.sh      install gno/gnokey/gnodev at Onyx's version
   demo-local.sh     full lifecycle on gnodev with 6 throwaway accounts
+  deploy-onyx.sh    deploy tavern + sealed to onyx-1 (source files only)
   commitment.sh     make a commitment hash locally
-  set-namespace.sh  switch r/dev/ to your g1 address before an Onyx deploy
+  set-namespace.sh  switch the namespace (Onyx needs your g1 address)
+  rpc-relay.py      only for sandboxes where gnokey can't use the HTTPS proxy
 docs/
   RESEARCH.md       Onyx details, current Gno syntax, reference projects
   LOCAL-DEMO.md     Render output of every demo phase
 ```
 
+Paths are versioned (`.../sealed/v1`), so a fix ships as `v2` next to it
+instead of replacing deployed code. `<ns>` is currently
+`g15xk7p2u3q6epjq5kfyew2lku5epakfnat7fj40`, the testnet deployer address.
+
 ## API
 
 | Function | Who | What |
 |---|---|---|
-| `CreateAuction(token, supply, reservePrice, commitEnd, revealEnd) uint64` | seller | Escrows `supply` of the GRC20 `token` (its grc20reg key, e.g. `gno.land/r/dev/tavern.TAVERN`). Approve `Address()` on the token first. Times are Unix seconds. |
+| `CreateAuction(token, supply, reservePrice, commitEnd, revealEnd) uint64` | seller | Escrows `supply` of the GRC20 `token` (its grc20reg key, e.g. `gno.land/r/<ns>/tavern/v1.TAVERN`). Approve `Address()` on the token first. Times are Unix seconds. |
 | `Commit(id, commitment)` + `-send <deposit>ugnot` | bidder | One sealed bid per address. Deposit ≥ 0.1 GNOT. |
 | `Reveal(id, price, amount, salt)` | bidder | Must match the commitment, and deposit must be ≥ `price × amount`. |
 | `Settle(id)` | anyone | After the reveal window closes. Moves no funds. |
@@ -76,24 +105,26 @@ Units: `price` and `reservePrice` are **ugnot per token unit**
 
 ```sh
 scripts/setup-gno.sh            # once: tools at Onyx's version + offline package cache
-gno test ./realms/...           # 17 tests
+gno test ./realms/...           # 20 tests
 scripts/demo-local.sh           # full lifecycle on gnodev, pages saved to demo-out/
+scripts/deploy-onyx.sh <key>    # deploy to onyx-1 (after set-namespace.sh <your g1 addr>)
 ```
 
 Make a bid by hand against a running `gnodev`:
 
 ```sh
-scripts/commitment.sh g1YOURADDR 2000000 100        # prints salt + commitment
-gnokey maketx call -pkgpath gno.land/r/dev/sealed -func Commit \
-  -args 1 -args <commitment> -send 200000000ugnot \
+scripts/commitment.sh g1YOURADDR 200000 10          # prints salt + commitment
+gnokey maketx call -pkgpath gno.land/r/<ns>/sealed/v1 -func Commit \
+  -args 1 -args <commitment> -send 2000000ugnot \
   -gas-fee 1000000ugnot -gas-wanted 50000000 -broadcast -chainid dev -remote 127.0.0.1:26657 KEY
 ```
 
 ## Status
 
 - [x] Day 1: research, realm, tests, local demo
-- [ ] Day 2: deploy to Onyx (`scripts/set-namespace.sh g1…`), web frontend
-- [ ] Demo video, submission (target Dec 16)
+- [x] Day 2: forfeits to winners (not seller), versioned paths, deploy tooling
+- [ ] Day 2: deploy to Onyx, wait for package approval
+- [ ] Web frontend, demo video, submission (target Dec 16)
 
-Keys in this repo: none. `.gitignore` blocks key files. Every key used so
-far was a throwaway local key.
+Keys in this repo: none. `.gitignore` blocks key files. The deployer is a
+testnet-only key kept outside the repo.

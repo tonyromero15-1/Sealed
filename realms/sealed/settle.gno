@@ -67,8 +67,8 @@ func (a *Auction) settle(now int64) {
 			clearing = price
 		} else {
 			// Supply runs out inside this level: split it pro-rata to the
-			// amounts asked. Rounding dust (< one unit per bidder) stays
-			// unsold and returns to the seller.
+			// amounts asked. Rounding dust (< one token unit per bidder)
+			// stays unsold and returns to the seller.
 			a.partialPrice = price
 			a.partialSupply = remaining
 			a.partialDemand = demand
@@ -94,6 +94,28 @@ func (a *Auction) settle(now int64) {
 	a.raised = raised
 	a.forfeits = forfeits
 	a.settled = true
+
+	// No-show forfeits go to the winners, in proportion to tokens won, never
+	// to the seller. Whatever is not shared (everything when nobody won,
+	// otherwise rounding dust) is burned: it stays in the realm for good.
+	var shared int64
+	for _, b := range valid {
+		shared += a.forfeitShareOf(b)
+	}
+	a.burned = forfeits - shared
+}
+
+// forfeitShareOf is a winning bid's cut of the no-show forfeits:
+// forfeits * tokensWon / tokensSold, rounded down.
+func (a *Auction) forfeitShareOf(b *Bid) int64 {
+	if !a.settled || a.forfeits == 0 || a.sold == 0 {
+		return 0
+	}
+	filled := a.fillOf(b)
+	if filled == 0 {
+		return 0
+	}
+	return proRata(filled, a.forfeits, a.sold)
 }
 
 // fillOf is how many token units a bid receives.
@@ -112,12 +134,16 @@ func (a *Auction) fillOf(b *Bid) int64 {
 
 // Outcome is what one bid ends up with after settlement.
 type Outcome struct {
-	Filled  int64  // token units won
-	Cost    int64  // ugnot paid: Filled * clearing price
-	Refund  int64  // ugnot returned
-	Forfeit int64  // ugnot kept for not revealing
-	Status  string // human-readable result
+	Filled       int64  // token units won
+	Cost         int64  // ugnot paid: Filled * clearing price
+	Refund       int64  // ugnot of the deposit returned
+	ForfeitShare int64  // ugnot bonus: this winner's share of no-show forfeits
+	Forfeit      int64  // ugnot lost for not revealing
+	Status       string // human-readable result
 }
+
+// Payout is everything the bidder receives in ugnot at Claim.
+func (o Outcome) Payout() int64 { return o.Refund + o.ForfeitShare }
 
 func (a *Auction) outcomeOf(b *Bid) Outcome {
 	if !b.Revealed {
@@ -130,7 +156,7 @@ func (a *Auction) outcomeOf(b *Bid) Outcome {
 	filled := a.fillOf(b)
 	// Safe: filled <= amount and clearing <= price, and price*amount <= deposit.
 	cost := filled * a.clearingPrice
-	o := Outcome{Filled: filled, Cost: cost, Refund: b.Deposit - cost}
+	o := Outcome{Filled: filled, Cost: cost, Refund: b.Deposit - cost, ForfeitShare: a.forfeitShareOf(b)}
 	switch {
 	case b.Price < a.ReservePrice:
 		o.Status = "Below reserve"

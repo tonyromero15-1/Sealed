@@ -20,7 +20,7 @@ var (
 	Token  *grc20.Token
 	ledger *grc20.PrivateLedger
 
-	// Key is the grc20reg key of this token, e.g. "gno.land/r/dev/tavern.TAVERN".
+	// Key is the grc20reg key of this token, e.g. "gno.land/r/g15xk7p2u3q6epjq5kfyew2lku5epakfnat7fj40/tavern/v1.TAVERN".
 	// Pass it as the `token` argument of sealed.CreateAuction.
 	Key string
 )
@@ -63,7 +63,7 @@ func Render(path string) string {
 		return ufmt.Sprintf("%d", Token.BalanceOf(address(parts[1])))
 	}
 	return "# Tavern Token (TAVERN)\n\n" +
-		"Demo GRC20 for [SEALED](/r/dev/sealed) launches. Testnet only.\n\n" +
+		"Demo GRC20 for [SEALED](/r/g15xk7p2u3q6epjq5kfyew2lku5epakfnat7fj40/sealed/v1) launches. Testnet only.\n\n" +
 		ufmt.Sprintf("- Registry key: `%s`\n", Key) +
 		ufmt.Sprintf("- Total supply: %d\n", Token.TotalSupply()) +
 		ufmt.Sprintf("- Holders: %d\n", Token.KnownAccounts()) +

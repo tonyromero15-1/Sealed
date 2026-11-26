@@ -22,7 +22,7 @@ const (
 	gnot     int64 = 1_000_000 // ugnot
 	testSalt       = "pepper-and-salt"
 	// A throwaway token realm, so these tests depend on no other realm.
-	testTokenRealm = "gno.land/r/dev/sealedtesttoken"
+	testTokenRealm = "gno.land/r/g15xk7p2u3q6epjq5kfyew2lku5epakfnat7fj40/sealedtesttoken"
 )
 
 var (
@@ -236,7 +236,7 @@ func TestRejectBadCommits(cur realm, t *testing.T) {
 	})
 
 	// Only a direct user call may commit, since it reads the tx's coins.
-	testing.SetRealm(testing.NewCodeRealm("gno.land/r/dev/middleman"))
+	testing.SetRealm(testing.NewCodeRealm("gno.land/r/g15xk7p2u3q6epjq5kfyew2lku5epakfnat7fj40/middleman"))
 	send(100 * gnot)
 	uassert.AbortsContains(t, cur, "directly from a user account", func() {
 		Commit(cross(cur), id, MakeCommitment(hank, gnot, 1, testSalt))
@@ -481,9 +481,156 @@ func TestUnrevealedForfeitsTenPercent(cur realm, t *testing.T) {
 	testing.SetRealm(u(ghost))
 	Claim(cross(cur), id)
 	uassert.Equal(t, 270*gnot, ugnotOf(ghost))
+	// The only winner gets the whole forfeit; the seller gets none of it.
+	testing.SetRealm(u(shown))
+	Claim(cross(cur), id)
+	uassert.Equal(t, 30*gnot, ugnotOf(shown)) // refund 0 + forfeit share 30
 	testing.SetRealm(u(seller))
 	Claim(cross(cur), id)
-	uassert.Equal(t, (100+30)*gnot, ugnotOf(seller)) // proceeds + forfeit
+	uassert.Equal(t, 100*gnot, ugnotOf(seller)) // proceeds only
+}
+
+// A seller who sprays fake sealed bids from other addresses (to fake demand)
+// and never reveals them gains nothing: the forfeit goes to the honest
+// winner, and the seller's own side is strictly poorer.
+func TestSellerFakeNoShowGainsNothing(cur realm, t *testing.T) {
+	testing.SetRealm(testing.NewCodeRealm(testTokenRealm))
+	ensureToken(t, cur)
+	seller := user("fake-seller")
+	fake := user("fake-seller-sybil") // controlled by the seller
+	honest := user("fake-honest")
+
+	testing.SetRealm(u(seller))
+	id := newAuction(t, cur, seller, 100, gnot)
+	testing.SetRealm(u(honest))
+	commitBid(t, cur, id, honest, gnot, 100, 100*gnot)
+	testing.SetRealm(u(fake))
+	commitBid(t, cur, id, fake, 5*gnot, 100, 200*gnot) // looks like strong demand
+	uassert.Equal(t, 2, SealedBids(id))
+	toRevealPhase()
+	testing.SetRealm(u(honest))
+	revealBid(t, cur, id, gnot, 100)
+	toClosedPhase()
+
+	testing.SetRealm(u(seller))
+	Claim(cross(cur), id)
+	testing.SetRealm(u(fake))
+	Claim(cross(cur), id)
+	testing.SetRealm(u(honest))
+	Claim(cross(cur), id)
+
+	a := getAuction(id)
+	uassert.Equal(t, 100*gnot, a.raised)
+	// Seller receives exactly the sale proceeds, nothing from the forfeit.
+	uassert.Equal(t, 100*gnot, ugnotOf(seller))
+	// Seller + sybil together: 100 + 180 = 280 GNOT, versus 300 GNOT
+	// (proceeds + the sybil's own deposit) had they not faked the bid.
+	uassert.Equal(t, 180*gnot, ugnotOf(fake))
+	uassert.Equal(t, 280*gnot, ugnotOf(seller)+ugnotOf(fake))
+	// The honest winner collects the 20 GNOT forfeit.
+	uassert.Equal(t, int64(100), tToken.BalanceOf(honest))
+	uassert.Equal(t, 20*gnot, ugnotOf(honest))
+	uassert.Equal(t, int64(0), a.burned)
+}
+
+// Forfeits are split among winners by tokens won. Outbid and below-reserve
+// bidders get none, and rounding dust is burned rather than handed out.
+func TestForfeitSplitAmongWinners(cur realm, t *testing.T) {
+	testing.SetRealm(testing.NewCodeRealm(testTokenRealm))
+	ensureToken(t, cur)
+	seller := user("split-seller")
+	a1, a2, a3 := user("split-a1"), user("split-a2"), user("split-a3")
+	outbid, low, ghost := user("split-outbid"), user("split-low"), user("split-ghost")
+
+	testing.SetRealm(u(seller))
+	id := newAuction(t, cur, seller, 90, gnot)
+	testing.SetRealm(u(a1))
+	commitBid(t, cur, id, a1, 3*gnot, 30, 90*gnot)
+	testing.SetRealm(u(a2))
+	commitBid(t, cur, id, a2, 2*gnot, 30, 60*gnot)
+	testing.SetRealm(u(a3))
+	commitBid(t, cur, id, a3, 1_500_000, 30, 45*gnot)
+	testing.SetRealm(u(outbid))
+	commitBid(t, cur, id, outbid, 1_200_000, 30, 36*gnot)
+	testing.SetRealm(u(low))
+	commitBid(t, cur, id, low, 500_000, 10, 5*gnot)
+	testing.SetRealm(u(ghost))
+	commitBid(t, cur, id, ghost, 9*gnot, 1, 1_000_010) // forfeit = 100,001 ugnot
+	toRevealPhase()
+	testing.SetRealm(u(a1))
+	revealBid(t, cur, id, 3*gnot, 30)
+	testing.SetRealm(u(a2))
+	revealBid(t, cur, id, 2*gnot, 30)
+	testing.SetRealm(u(a3))
+	revealBid(t, cur, id, 1_500_000, 30)
+	testing.SetRealm(u(outbid))
+	revealBid(t, cur, id, 1_200_000, 30)
+	testing.SetRealm(u(low))
+	revealBid(t, cur, id, 500_000, 10)
+	toClosedPhase()
+	testing.SetRealm(u(seller))
+	Settle(cross(cur), id)
+
+	a := getAuction(id)
+	uassert.Equal(t, int64(1_500_000), a.clearingPrice)
+	uassert.Equal(t, int64(90), a.sold)
+	uassert.Equal(t, int64(100_001), a.forfeits)
+	// Three equal winners: 100,001 * 30/90 = 33,333 each; 2 ugnot of dust burned.
+	for _, w := range []address{a1, a2, a3} {
+		uassert.Equal(t, int64(33_333), a.outcomeOf(a.getBid(w)).ForfeitShare)
+	}
+	uassert.Equal(t, int64(0), a.outcomeOf(a.getBid(outbid)).ForfeitShare)
+	uassert.Equal(t, int64(0), a.outcomeOf(a.getBid(low)).ForfeitShare)
+	uassert.Equal(t, int64(2), a.burned)
+
+	// Claims pay exactly that: a1 deposited 90, pays 30 x 1.5 = 45.
+	testing.SetRealm(u(a1))
+	Claim(cross(cur), id)
+	uassert.Equal(t, 45*gnot+33_333, ugnotOf(a1))
+	testing.SetRealm(u(outbid))
+	Claim(cross(cur), id)
+	uassert.Equal(t, 36*gnot, ugnotOf(outbid)) // full refund, no share
+	testing.SetRealm(u(seller))
+	Claim(cross(cur), id)
+	uassert.Equal(t, 135*gnot, ugnotOf(seller)) // 90 x 1.5 GNOT only
+}
+
+// If nobody wins, the forfeits are burned: kept by the realm forever and
+// claimable by no one. The seller still gets nothing but their tokens back.
+func TestNoWinnersForfeitsBurned(cur realm, t *testing.T) {
+	testing.SetRealm(testing.NewCodeRealm(testTokenRealm))
+	ensureToken(t, cur)
+	seller, g1, g2 := user("burn-seller"), user("burn-ghost1"), user("burn-ghost2")
+	gnotBefore := ugnotOf(realmAddr)
+
+	testing.SetRealm(u(seller))
+	id := newAuction(t, cur, seller, 100, gnot)
+	testing.SetRealm(u(g1))
+	commitBid(t, cur, id, g1, 2*gnot, 50, 100*gnot)
+	testing.SetRealm(u(g2))
+	commitBid(t, cur, id, g2, 3*gnot, 50, 150*gnot)
+	toRevealPhase()
+	toClosedPhase() // nobody revealed
+	testing.SetRealm(u(seller))
+	Claim(cross(cur), id)
+
+	a := getAuction(id)
+	uassert.Equal(t, int64(0), a.sold)
+	uassert.Equal(t, 25*gnot, a.forfeits)
+	uassert.Equal(t, 25*gnot, a.burned)
+	uassert.Equal(t, int64(0), ugnotOf(seller))
+	uassert.Equal(t, int64(100), tToken.BalanceOf(seller))
+
+	testing.SetRealm(u(g1))
+	Claim(cross(cur), id)
+	testing.SetRealm(u(g2))
+	Claim(cross(cur), id)
+	uassert.Equal(t, 90*gnot, ugnotOf(g1))
+	uassert.Equal(t, 135*gnot, ugnotOf(g2))
+	// Only the burned forfeits remain in the realm, and nobody can claim them.
+	uassert.Equal(t, gnotBefore+25*gnot, ugnotOf(realmAddr))
+	testing.SetRealm(u(seller))
+	uassert.AbortsContains(t, cur, "nothing to claim", func() { Claim(cross(cur), id) })
 }
 
 // End to end: real token and GNOT balances after every claim, unsold tokens
@@ -519,13 +666,14 @@ func TestClaimAmountsAndUnsoldReturned(cur realm, t *testing.T) {
 	uassert.True(t, a.settled)
 	// Demand (300) < supply (1000): all fill, clearing = lowest bid = 2 GNOT.
 	uassert.Equal(t, 2*gnot, a.clearingPrice)
+	// Kim's 12 GNOT forfeit is split by tokens won: ivy 200/300, jon 100/300.
 	uassert.Equal(t, int64(200), tToken.BalanceOf(ivy))
-	uassert.Equal(t, (700-400)*gnot, ugnotOf(ivy))
+	uassert.Equal(t, (700-400+8)*gnot, ugnotOf(ivy))
 
 	testing.SetRealm(u(jon))
 	Claim(cross(cur), id)
 	uassert.Equal(t, int64(100), tToken.BalanceOf(jon))
-	uassert.Equal(t, int64(0), ugnotOf(jon)) // deposit exactly covered the cost
+	uassert.Equal(t, 4*gnot, ugnotOf(jon)) // deposit covered the cost exactly; +4 GNOT forfeit share
 
 	testing.SetRealm(u(kim))
 	Claim(cross(cur), id)
@@ -535,7 +683,7 @@ func TestClaimAmountsAndUnsoldReturned(cur realm, t *testing.T) {
 	testing.SetRealm(u(seller))
 	Claim(cross(cur), id)
 	uassert.Equal(t, int64(700), tToken.BalanceOf(seller)) // unsold returned
-	uassert.Equal(t, (600+12)*gnot, ugnotOf(seller))       // 300 x 2 GNOT + forfeit
+	uassert.Equal(t, 600*gnot, ugnotOf(seller))            // 300 x 2 GNOT, no forfeit
 
 	// Every token and ugnot of this auction has left escrow.
 	uassert.Equal(t, escrowBefore, tToken.BalanceOf(realmAddr))

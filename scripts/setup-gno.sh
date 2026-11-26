@@ -18,6 +18,12 @@ fi
 if ! command -v gnodev >/dev/null 2>&1 || [ "${FORCE_INSTALL:-0}" = 1 ]; then
   make -C "$SRC" install
 fi
+# Put the tools on PATH when the Go bin dir isn't (needs a writable /usr/local/bin).
+GOBIN_DIR="$(go env GOPATH)/bin"
+if [ -w /usr/local/bin ]; then
+  for t in gno gnokey gnodev; do ln -sf "$GOBIN_DIR/$t" "/usr/local/bin/$t"; done
+fi
+export PATH="$PATH:$GOBIN_DIR"
 
 # Seed $GNOHOME/pkg/mod with every package under examples/gno.land, plus the
 # marker files the loader checks before it tries to download.
