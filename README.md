@@ -81,6 +81,7 @@ scripts/
 docs/
   RESEARCH.md       Onyx details, current Gno syntax, reference projects
   LOCAL-DEMO.md     Render output of every demo phase
+  DEPLOYMENTS.md    Onyx package paths, tx hashes, status
 ```
 
 Paths are versioned (`.../sealed/v1`), so a fix ships as `v2` next to it
@@ -123,7 +124,8 @@ gnokey maketx call -pkgpath gno.land/r/<ns>/sealed/v1 -func Commit \
 
 - [x] Day 1: research, realm, tests, local demo
 - [x] Day 2: forfeits to winners (not seller), versioned paths, deploy tooling
-- [ ] Day 2: deploy to Onyx, wait for package approval
+- [x] Day 2: deployed to onyx-1, **parked until a package approver enables it**
+  (paths and tx hashes in [`docs/DEPLOYMENTS.md`](docs/DEPLOYMENTS.md))
 - [ ] Web frontend, demo video, submission (target Dec 16)
 
 Keys in this repo: none. `.gitignore` blocks key files. The deployer is a
