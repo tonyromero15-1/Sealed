@@ -1,0 +1,27 @@
+# Keys and wallets: NEVER commit. Everything we generate is testnet-only anyway.
+*.key
+*.pem
+*.mnemonic
+mnemonic*.txt
+keys/
+.gnokey/
+gnokey-home/
+.env
+.env.*
+priv_validator_key.json
+priv_validator_state.json
+node_key.json
+
+# Local chain + demo artifacts
+.gnodev/
+gnodev-data/
+*.log
+demo-out/
+demo-out-*/
+tmp/
+
+# Editors / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
