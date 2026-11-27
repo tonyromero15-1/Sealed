@@ -736,3 +736,11 @@ func TestFormatting(t *testing.T) {
 	uassert.Equal(t, int64(10), forfeitOf(100))
 	uassert.Equal(t, int64(9), forfeitOf(99))
 }
+
+// The web page (web/src/lib/commitment.test.ts) asserts the same vector, so
+// the realm and the page provably hash bids identically.
+func TestCommitmentMatchesWebVector(t *testing.T) {
+	uassert.Equal(t,
+		"2a8ad9487f426b3bdc54ac23fd033286c6f5f9910f1e598058bb67fd5faa69a5",
+		MakeCommitment(address("g16cyxw8jdpj8wy2gqd0kr0v77x84fpjc673dely"), 500000, 4, "abcdefgh"))
+}

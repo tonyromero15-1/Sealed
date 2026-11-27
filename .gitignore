@@ -17,6 +17,7 @@ node_key.json
 gnodev-data/
 *.log
 demo-out/
+demo-out-*/
 tmp/
 
 # Editors / OS

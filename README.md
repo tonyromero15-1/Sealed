@@ -69,7 +69,7 @@ realms/sealed/    gno.land/r/<ns>/sealed/v1: the auction realm
   sealed.gno        types, CreateAuction / Commit / Reveal / Settle / Claim
   settle.gno        clearing price, pro-rata split, forfeit shares
   render.gno        gnoweb pages (home + auction page)
-  sealed_test.gno   20 tests
+  sealed_test.gno   21 tests
 realms/tavern/    gno.land/r/<ns>/tavern/v1: demo GRC20 (TAVERN) with a faucet
 scripts/
   setup-gno.sh      install gno/gnokey/gnodev at Onyx's version
@@ -78,8 +78,10 @@ scripts/
   commitment.sh     make a commitment hash locally
   set-namespace.sh  switch the namespace (Onyx needs your g1 address)
   rpc-relay.py      only for sandboxes where gnokey can't use the HTTPS proxy
+web/              bidder page: Vite + React + Tailwind, Adena wallet (see web/README.md)
 docs/
   RESEARCH.md       Onyx details, current Gno syntax, reference projects
+  LIVE-DEMO.md      a real auction on onyx-1: every tx hash and page
   LOCAL-DEMO.md     Render output of every demo phase
   DEPLOYMENTS.md    Onyx package paths, tx hashes, status
 ```
@@ -106,8 +108,10 @@ Units: `price` and `reservePrice` are **ugnot per token unit**
 
 ```sh
 scripts/setup-gno.sh            # once: tools at Onyx's version + offline package cache
-gno test ./realms/...           # 20 tests
+gno test ./realms/...           # 21 tests
 scripts/demo-local.sh           # full lifecycle on gnodev, pages saved to demo-out/
+scripts/demo-onyx.sh            # one real auction on onyx-1 (3 fresh bidder keys)
+cd web && npm install && npm run dev   # bidder page against Onyx
 scripts/deploy-onyx.sh <key>    # deploy to onyx-1 (after set-namespace.sh <your g1 addr>)
 ```
 
@@ -128,7 +132,8 @@ gnokey maketx call -pkgpath gno.land/r/<ns>/sealed/v1 -func Commit \
   [sealed/v1](https://onyx.testnets.gno.land/r/g15xk7p2u3q6epjq5kfyew2lku5epakfnat7fj40/sealed/v1),
   [tavern/v1](https://onyx.testnets.gno.land/r/g15xk7p2u3q6epjq5kfyew2lku5epakfnat7fj40/tavern/v1)
   (tx hashes in [`docs/DEPLOYMENTS.md`](docs/DEPLOYMENTS.md))
-- [ ] Web frontend, demo video, submission (target Dec 16)
+- [x] Day 3: live auction on onyx-1 ([`docs/LIVE-DEMO.md`](docs/LIVE-DEMO.md)), bidder web page (not deployed)
+- [ ] Deploy the web page, demo video, submission (target Dec 16)
 
 Keys in this repo: none. `.gitignore` blocks key files. The deployer is a
 testnet-only key kept outside the repo.
