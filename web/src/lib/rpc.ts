@@ -52,6 +52,14 @@ export function parseString(lit: string): string {
   return JSON.parse(m[1]);
 }
 
+// Parses the first value of a multi-value result, e.g. avl's GetByIndex
+// returns `("key" string) (&(struct{...}) *T)`.
+export function parseFirstString(lit: string): string {
+  const m = lit.trim().match(/^\(("(?:[^"\\]|\\.)*") string\)/);
+  if (!m) throw new QueryError("unexpected value: " + lit.slice(0, 120));
+  return JSON.parse(m[1]);
+}
+
 // Parses `(123 int)` / `(123 int64)` / `(true bool)`.
 export function parseScalar(lit: string): string {
   const m = lit.trim().match(/^\(([^ ]+) [\w.]+\)$/);

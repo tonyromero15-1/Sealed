@@ -23,3 +23,17 @@ describe("format", () => {
     expect(formatCountdown(0)).toBe("0s");
   });
 });
+
+import { parseFirstString, parseScalar, parseString } from "./rpc";
+
+describe("qeval value parsing", () => {
+  it("reads strings and scalars", () => {
+    expect(parseString('("8|1,795,783,197|—|TAVERN" string)')).toBe("8|1,795,783,197|—|TAVERN");
+    expect(parseScalar("(1795783197 int64)")).toBe("1795783197");
+    expect(parseScalar("(true bool)")).toBe("true");
+  });
+  it("reads the key from avl GetByIndex's two return values", () => {
+    const lit = '("g16cyxw8jdpj8wy2gqd0kr0v77x84fpjc673dely" string)\n(&(struct{("g16cyxw8jdpj8wy2gqd0kr0v77x84fpjc673dely" .uverse.address)} sealed.Bid) *sealed.Bid)';
+    expect(parseFirstString(lit)).toBe("g16cyxw8jdpj8wy2gqd0kr0v77x84fpjc673dely");
+  });
+});

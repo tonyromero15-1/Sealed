@@ -1,5 +1,5 @@
 import { REALM_PATH } from "../config";
-import { parseScalar, parseString, qeval } from "./rpc";
+import { parseFirstString, parseScalar, parseString, qeval } from "./rpc";
 
 // Reads SEALED v1 state through vm/qeval.
 //
@@ -164,7 +164,8 @@ export async function listBids(id: number, count: number): Promise<Bid[]> {
   assertId(id);
   const keys = await Promise.all(
     Array.from({ length: count }, (_, i) =>
-      qeval(REALM_PATH, `mustGetAuction(${id}).bids.GetByIndex(${i})`).then(parseString),
+      // GetByIndex returns (key, value); the key is the bidder address.
+      qeval(REALM_PATH, `mustGetAuction(${id}).bids.GetByIndex(${i})`).then(parseFirstString),
     ),
   );
   const bids = await Promise.all(keys.map((k) => getBid(id, k)));
