@@ -124,8 +124,10 @@ gnokey maketx call -pkgpath gno.land/r/<ns>/sealed/v1 -func Commit \
 
 - [x] Day 1: research, realm, tests, local demo
 - [x] Day 2: forfeits to winners (not seller), versioned paths, deploy tooling
-- [x] Day 2: deployed to onyx-1, **parked until a package approver enables it**
-  (paths and tx hashes in [`docs/DEPLOYMENTS.md`](docs/DEPLOYMENTS.md))
+- [x] Day 2: **live on onyx-1**:
+  [sealed/v1](https://onyx.testnets.gno.land/r/g15xk7p2u3q6epjq5kfyew2lku5epakfnat7fj40/sealed/v1),
+  [tavern/v1](https://onyx.testnets.gno.land/r/g15xk7p2u3q6epjq5kfyew2lku5epakfnat7fj40/tavern/v1)
+  (tx hashes in [`docs/DEPLOYMENTS.md`](docs/DEPLOYMENTS.md))
 - [ ] Web frontend, demo video, submission (target Dec 16)
 
 Keys in this repo: none. `.gitignore` blocks key files. The deployer is a
